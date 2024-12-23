@@ -1,23 +1,34 @@
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { NextFunction, Request, Response } from 'express';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import AppErrors from '../errors/AppErrors';
+import dotenv from 'dotenv';
+dotenv.config();
 
-
-export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+export const verifyToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const token = req.headers.authorization;
 
   if (!token) {
-    throw new Error("Token is not found");
+    throw new AppErrors(404, 'This token does not exist');
   }
 
   try {
-    const decoded = jwt.verify(token as string, 'secret1234');
+    const decoded = jwt.verify(
+      token as string,
+      process.env.JWT_SECRET as string,
+    );
     if (!decoded) {
-      throw new Error("This user is not authorized");
+      throw new AppErrors(403, 'This user is not authorized');
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (req as any).user = decoded;    
-    next(); 
-  } catch (error:unknown) {
-    res.status(401).json({ message: error });
+    req.user = decoded as JwtPayload;
+    next();
+  } catch (error: unknown) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      throw new AppErrors(401, 'Invalid or expired token');
+    }
+    next(error);
   }
 };
