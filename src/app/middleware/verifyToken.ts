@@ -11,9 +11,6 @@ export const verifyToken = (
 ) => {
   const  authHeader = req.headers.authorization;
   const token =  authHeader?.split(" ")[1]
-
-  console.log(token);
-
   if (!token) {
     throw new AppErrors(404, 'This token does not exist');
   }
